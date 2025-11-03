@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "framework": "other",
+  "builds": [
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "handle": "filesystem"
+    }
+  ]
+}
