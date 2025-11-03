@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wallet Connect Tester (MegaETH 6342)</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#0b0b0f; color:#fff; margin:0; }
+    .wrap { max-width: 720px; margin: 0 auto; padding: 24px; }
+    .card { background: #11131b; border: 1px solid #23283a; border-radius: 12px; padding: 16px; margin-top: 16px; }
+    button { background:#141826; color:#fff; border:1px solid #2a3150; border-radius:10px; padding:10px 14px; cursor:pointer; }
+    .mono{ font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .muted { color: #9aa0ae; }
+    pre { white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Wallet Connect Tester</h1>
+    <p class="muted">This page uses only <code>window.ethereum</code> (no ethers/viem). If this works, your wallet and network are fine.</p>
+    <div class="card">
+      <button id="connect">Connect Wallet</button>
+      <button id="switch">Switch/Add MegaETH (6342)</button>
+      <div id="status" class="mono" style="margin-top:8px;"></div>
+    </div>
+    <div class="card">
+      <h3>Details</h3>
+      <div>ChainId: <span id="chain" class="mono">—</span></div>
+      <div>Account: <span id="acct" class="mono">—</span></div>
+      <h4>Last error</h4>
+      <pre id="err" class="mono muted">—</pre>
+    </div>
+  </div>
+
+<script>
+const RPC = "https://carrot.megaeth.com/rpc";
+const HEX_CHAIN_ID = "0x18C6"; // 6342
+
+function set(id, val){ document.getElementById(id).textContent = val; }
+function setErr(e){ document.getElementById("err").textContent = (e && (e.message||e.toString())) || "—"; }
+
+async function refresh(){
+  try{
+    const chainId = await window.ethereum?.request({ method: "eth_chainId" });
+    set("chain", chainId || "no provider");
+    const accounts = await window.ethereum?.request({ method: "eth_accounts" });
+    set("acct", (accounts && accounts[0]) || "—");
+    document.getElementById("status").textContent = (accounts && accounts[0]) ? "connected" : "not connected";
+  }catch(e){ setErr(e); }
+}
+
+document.getElementById("connect").onclick = async () => {
+  try {
+    if (!window.ethereum) { setErr("No window.ethereum found"); alert("Install MetaMask or turn off Brave Shields"); return; }
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    await refresh();
+  } catch(e){ setErr(e); alert("Connect failed; see error below."); }
+};
+
+document.getElementById("switch").onclick = async () => {
+  try{
+    if (!window.ethereum) { setErr("No window.ethereum"); return; }
+    try {
+      await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: HEX_CHAIN_ID }] });
+    } catch {
+      await window.ethereum.request({ method: "wallet_addEthereumChain", params: [{
+        chainId: HEX_CHAIN_ID,
+        chainName: "MegaETH Testnet",
+        nativeCurrency: { name: "MEGA", symbol: "MEGA", decimals: 18 },
+        rpcUrls: [RPC],
+        blockExplorerUrls: []
+      }] });
+    }
+    await refresh();
+  }catch(e){ setErr(e); alert("Switch/add failed; see error below."); }
+};
+
+window.addEventListener("load", refresh);
+</script>
+</body>
+</html>
